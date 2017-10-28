@@ -15,7 +15,8 @@ shinyUI(fluidPage(
       )
     ),
     mainPanel(
-      dygraphOutput("plots")
+      dygraphOutput("resistancePlot"),
+      dygraphOutput("temperaturePlot")
     )
   )
 ))

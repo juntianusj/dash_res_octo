@@ -38,23 +38,20 @@ shinyServer(function(input, output) {
   res_octo_data <- Reduce(function(csv1, csv2) {
     merge(csv1, csv2, all = TRUE)
   }, lapply(logs, read_csv, col_names = columns))
-  message("CSVs processed")
+
   res_octo_data %<>% mutate(Date = paste(Date, as.character(Time)) %>%
                               as.POSIXct(format = "%d/%m/%Y %H:%M:%S",
                                          tz = "GMT")) %>%
     select(-Time)
-  message("cleaning up date and time")
+  
   res_octo_data %<>%
     gather(SensorType, Value, -Temp, -var1, -var2, -Voltage, -Date) %>%
     mutate(Specimen = factor(gsub("_\\w+_\\d+$", "", SensorType)),
            SensorNumber = factor(gsub("^\\d+_\\w+_", "", SensorType)),
            SensorType = factor(gsub("(\\d_|_\\d)", "", SensorType)))
-  message("restructuring data")
-  print(head(res_octo_data))
   
-  output$plots <- renderDygraph({
-    message("vals <- res_octo_data ")
-    vals <- res_octo_data %>% filter(Specimen == input$specimen &
+    values <- reactive({
+      res_octo_data %>% filter(Specimen == input$specimen &
                                        ((SensorNumber == input$depth &
                                            SensorType == "depth") |
                                           (SensorNumber == input$thermistor &
@@ -63,6 +60,10 @@ shinyServer(function(input, output) {
       mutate(Corrected = correctValue(depth, as.numeric(input$ea), rg,
                                        as.numeric(input$tref),
                                        temp(thermistor)))
+    })
+  output$resistancePlot <- renderDygraph({
+    message("vals <- res_octo_data ")
+    vals <- values()
     cvalsts <- xts(vals$Corrected, vals$Date)
     rvalsts <- xts(vals %>% select(Raw = depth) %>% pull(Raw), vals$Date)
     valsts <- cbind(cvalsts, rvalsts)
@@ -71,8 +72,13 @@ shinyServer(function(input, output) {
       dyRangeSelector(height = 20, strokeColor = "")
   })
   
-  temperaturePlot <- renderDygraph({
-    
+  output$temperaturePlot <- renderDygraph({
+    vals <- values()
+    # Something weird going on here with %<>%, so using self assignment.
+    vals <- vals %>% mutate(Temp = temp(thermistor))
+    valsts <- xts(vals$Temp, vals$Date)
+    dygraph(valsts, "Temperature (degC) by Time") %>% 
+      dyRangeSelector(height = 20, strokeColor = "")
   })
   
 
