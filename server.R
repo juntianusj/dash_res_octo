@@ -27,26 +27,38 @@ shinyServer(function(input, output) {
              SensorType = factor(gsub("(\\d_|_\\d)", "", SensorType)))
   })
 
-  values <- reactive({
-    res_octo_data %>% filter(Specimen == input$specimen &
-                                     ((SensorNumber == input$depth &
+  getCorrectedValues <- function(specimen, depth, thermistor, ea, tref, rg) {
+    res_octo_data %>% filter(Specimen == specimen &
+                                     ((SensorNumber == depth &
                                          SensorType == "depth") |
-                                        (SensorNumber == input$thermistor &
+                                        (SensorNumber == thermistor &
                                            SensorType == "thermistor"))) %>%
     distinct() %>%
     select(-SensorNumber) %>%
     spread(SensorType, Value) %>%
-    mutate(Corrected = correctValue(depth, as.numeric(input$ea), rg,
-                                     as.numeric(input$tref),
-                                     temp(thermistor))) %>%
+    mutate(Corrected = correctValue(depth, as.numeric(ea), rg,
+                                     as.numeric(tref),
+                                     temp(thermistor)),
+           Depth = depth) %>%
     drop_na()
-  })
+  }
+
   output$resistancePlot <- renderDygraph({
-    vals <- values()
-    cvalsts <- xts(vals$Corrected, vals$Date)
-    rvalsts <- xts(vals %>% select(Raw = depth) %>% pull(Raw), vals$Date)
+    vals <- lapply(input$depth, function(depth) {
+      getCorrectedValues(input$specimen, depth, input$thermistor,
+                         input$ea, input$tref, rg)
+    })
+    cvalsts <- lapply(vals, function(val) {
+      xts(val$Corrected, val$Date)
+    })
+    cvalsts <- do.call(cbind, cvalsts)
+    rvalsts <- lapply(vals, function(val) {
+      xts(val %>% select(Raw = depth) %>% pull(Raw), val$Date)
+    })
+    rvalsts <- do.call(cbind, rvalsts)
     valsts <- cbind(cvalsts, rvalsts)
-    dimnames(valsts)[[2]] <- c("Corrected", "Raw")
+    dimnames(valsts)[[2]] <- c(paste0("Depth ", input$depth, " Corrected"),
+                               paste0("Depth ", input$depth, " Raw"))
     dygraph(valsts, "Resistance by Time") %>%
       dyRangeSelector(height = 20, strokeColor = "")
   })

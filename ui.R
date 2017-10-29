@@ -5,10 +5,12 @@ shinyUI(fluidPage(
   sidebarLayout(
     sidebarPanel(
       wellPanel(
-        selectInput("specimen", "Specimen:",
+        selectizeInput("specimen", "Specimen:",
                     choices = seq(config[["specimens"]])),
-        selectInput("depth", "Depth:", choices = seq(config[["depths"]])),
-        selectInput("thermistor", "Thermistor:",
+        selectizeInput("depth", "Depth:", choices = seq(config[["depths"]]),
+                       multiple = TRUE,
+                       selected = seq(config[["specimens"]])[1]),
+        selectizeInput("thermistor", "Thermistor:",
                     choices = seq(config[["thermistors"]])),
         textInput("ea", "Ea:", value = 21),
         textInput("tref", "Tref:", value = 20),
