@@ -8,7 +8,7 @@ library(dygraphs)
 library(xts)
 
 shinyServer(function(input, output) {
-  withProgress("Loading data", {
+  withProgress(message = "Loading data", value = 1, expr = {
     logs <- list.files(path = "Data", pattern = "^[0-9]{8}[.](CSV|csv)",
                        full.names = TRUE)
     res_octo_data <- Reduce(function(csv1, csv2) {
