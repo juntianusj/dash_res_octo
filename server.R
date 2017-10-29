@@ -8,8 +8,8 @@ library(dygraphs)
 library(xts)
 
 shinyServer(function(input, output) {
-  logs <- paste0("Data/",
-                 list.files(path = "Data", pattern = "^[0-9]{8}[.](CSV|csv)"))
+  logs <- list.files(path = "Data", pattern = "^[0-9]{8}[.](CSV|csv)",
+                     full.names = TRUE)
   res_octo_data <- Reduce(function(csv1, csv2) {
     merge(csv1, csv2, all = TRUE)
   }, lapply(logs, read_csv, col_names = columns))
@@ -31,13 +31,13 @@ shinyServer(function(input, output) {
                                            SensorType == "depth") |
                                           (SensorNumber == input$thermistor &
                                              SensorType == "thermistor"))) %>%
+      select(-SensorNumber) %>%
       spread(SensorType, Value) %>%
       mutate(Corrected = correctValue(depth, as.numeric(input$ea), rg,
                                        as.numeric(input$tref),
                                        temp(thermistor)))
     })
   output$resistancePlot <- renderDygraph({
-    message("vals <- res_octo_data ")
     vals <- values()
     cvalsts <- xts(vals$Corrected, vals$Date)
     rvalsts <- xts(vals %>% select(Raw = depth) %>% pull(Raw), vals$Date)
