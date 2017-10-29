@@ -60,7 +60,11 @@ shinyServer(function(input, output) {
       dyRangeSelector(height = 20, strokeColor = "")
   })
 
-
+  output$download_data <- downloadHandler(
+    filename = "dash_res_octo_data.csv",
+    content = function(con) {
+      write.csv(res_octo_data, con, row.names = FALSE)
+    })
 
 
 
