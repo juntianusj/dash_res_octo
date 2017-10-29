@@ -64,7 +64,10 @@ shinyServer(function(input, output) {
   })
 
   output$temperaturePlot <- renderDygraph({
-    vals <- values()
+    # depth[1] because the temperature readings will all be the same.
+    vals <- getCorrectedValues(input$specimen, input$depth[1], input$thermistor,
+                               input$ea, input$tref, rg)
+
     # Something weird going on here with %<>%, so using self assignment.
     vals <- vals %>% mutate(Temp = temp(thermistor))
     valsts <- xts(vals$Temp, vals$Date)
