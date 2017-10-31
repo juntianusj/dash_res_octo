@@ -57,9 +57,16 @@ shinyServer(function(input, output) {
     })
     rvalsts <- do.call(cbind, rvalsts)
     valsts <- cbind(cvalsts, rvalsts)
-    dimnames(valsts)[[2]] <- c(paste0("Depth ", input$depth, " Corrected"),
-                               paste0("Depth ", input$depth, " Raw"))
+    corrected_labels <- paste0("Depth ", input$depth, " Corrected")
+    raw_labels <- paste0("Depth ", input$depth, " Raw")
+
+    dimnames(valsts)[[2]] <- c(corrected_labels,
+                               raw_labels)
+
     dygraph(valsts, "Resistance by Time") %>%
+      dyGroup(corrected_labels) %>%
+      dyGroup(raw_labels, strokePattern = "dashed") %>%
+      dyLegend(show = "follow") %>%
       dyRangeSelector(height = 20, strokeColor = "")
   })
 
